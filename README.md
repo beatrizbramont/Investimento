@@ -194,11 +194,22 @@ serverless, numa única URL e sem hibernação. A configuração está em `verce
 | Caminho | Destino |
 |---|---|
 | `/api/*` | `api/index.py` — função Python que expõe o mesmo app FastAPI |
-| resto | `frontend/dist` (SPA) |
+| `/` | `frontend/index.html` |
+| resto | `frontend/$1` (assets compilados) |
 
-`api/index.py` não duplica código: ele apenas importa `backend/app`. As
-dependências de produção ficam em `api/requirements.txt` (só FastAPI e Pydantic —
-uvicorn e pytest não sobem).
+`api/index.py` não duplica código: ele apenas importa `backend/app`, e o
+`includeFiles` do `vercel.json` garante que essa pasta seja empacotada junto com a
+função. As dependências de produção ficam em `api/requirements.txt` (só FastAPI e
+Pydantic — uvicorn e pytest não sobem).
+
+> **Por que as rotas apontam para `/frontend/…` e não para a raiz**
+>
+> O `@vercel/static-build` publica o conteúdo de `distDir` sob o prefixo do
+> diretório onde está o `package.json` de origem. Como o nosso vive em
+> `frontend/`, o `index.html` compilado fica em `/frontend/index.html` — não em
+> `/index.html`. Apontar as rotas para a raiz faz o site inteiro responder 404
+> enquanto a função Python continua funcionando normalmente, o que torna o
+> sintoma confuso de diagnosticar.
 
 ```bash
 npm i -g vercel
