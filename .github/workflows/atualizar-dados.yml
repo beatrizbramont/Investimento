@@ -1,0 +1,61 @@
+name: Atualizar séries do Banco Central
+
+# Busca CDI, poupança e IPCA na API SGS e abre um Pull Request com o que mudou.
+# Só anos COMPLETOS entram — por isso a atualização de verdade acontece uma vez
+# por ano, quando dezembro fecha. Nos demais meses o robô não encontra diferença
+# e simplesmente não abre PR nenhum.
+on:
+  schedule:
+    # Dia 10 de cada mês, 12h UTC (9h de Brasília). O BCB já publicou o mês
+    # anterior a essa altura.
+    - cron: '0 12 10 * *'
+  workflow_dispatch: # permite rodar na mão pela aba Actions
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependências
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Buscar séries no Banco Central
+        working-directory: backend
+        run: python scripts/atualizar_dados.py --escrever
+
+      # Rede nenhuma: se o BCB devolveu algo estranho, os testes quebram antes
+      # de o Pull Request existir.
+      - name: Rodar os testes com os dados novos
+        working-directory: backend
+        run: pytest -q
+
+      - name: Abrir Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: dados/bcb-automatico
+          delete-branch: true
+          commit-message: 'dados: atualiza séries do Banco Central'
+          title: 'Atualiza séries do Banco Central'
+          body: |
+            Atualização automática de **CDI**, **poupança** e **IPCA** a partir da
+            [API SGS do Banco Central](https://dadosabertos.bcb.gov.br/)
+            (séries 4391, 196 e 433).
+
+            O script compõe as variações mensais em rentabilidade anual e só
+            considera anos com os doze meses publicados.
+
+            A suíte de testes rodou com os dados novos antes deste PR ser aberto.
+
+            > Ibovespa e IFIX não existem no SGS e continuam sendo atualizados à
+            > mão em `backend/app/dados.py`.

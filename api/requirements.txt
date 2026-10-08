@@ -1,0 +1,4 @@
+# Dependências da função serverless — só o que a API precisa em produção.
+# uvicorn, httpx e pytest ficam de fora: são de desenvolvimento e de testes.
+fastapi==0.115.6
+pydantic==2.10.4

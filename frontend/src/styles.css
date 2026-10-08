@@ -1,0 +1,951 @@
+/* ============================================================
+   Investe Simples — sistema visual
+
+   Referência: imprensa financeira (papel creme, tinta quase preta,
+   títulos em serifada). As regras do gênero, seguidas à risca:
+
+   1. Hierarquia vem de RÉGUA e ESPAÇO, nunca de sombra ou caixa.
+   2. Serifada só nos títulos; dados e controles em sans, sempre
+      com algarismos tabulares para alinhar na vertical.
+   3. Cantos retos. O único raio no projeto é o dos marcadores.
+   4. Um acento só (claret) e com parcimônia — ele marca ação,
+      não decora.
+
+   As cores das SÉRIES do gráfico não estão aqui: cada produto traz
+   a sua pela API, de uma paleta validada para daltonismo contra
+   estas superfícies exatas.
+   ============================================================ */
+
+:root {
+  /* superfícies */
+  --papel: #faf7f2;
+  --papel-fundo: #f3eee3;
+  --superficie: #faf7f2; /* alias usado pelo gráfico */
+
+  /* tinta */
+  --tinta: #14120f;
+  --texto: #14120f;
+  --texto-medio: #5c5750;
+  --texto-fraco: #8c857a;
+
+  /* réguas e chrome do gráfico */
+  --regua: #ddd5c5;
+  --regua-forte: #14120f;
+  --grade: #e8e1d4;
+  --eixo: #c9c0ae;
+  --borda: #ddd5c5;
+
+  /* acento e estados */
+  --acento: #8f1d3f;
+  --bom: #1f6b3a;
+  --ruim: #a32424;
+
+  --serifada: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia,
+    'Times New Roman', serif;
+  --sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papel: #16140f;
+    --papel-fundo: #100e0a;
+    --superficie: #16140f;
+
+    --tinta: #f4f0e6;
+    --texto: #f4f0e6;
+    --texto-medio: #bdb5a5;
+    --texto-fraco: #8c857a;
+
+    --regua: #332e24;
+    --regua-forte: #f4f0e6;
+    --grade: #2a251d;
+    --eixo: #453f33;
+    --borda: #332e24;
+
+    --acento: #e07f9c;
+    --bom: #4caf6d;
+    --ruim: #e0726c;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: var(--sans);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--serifada);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+a {
+  color: var(--acento);
+  text-underline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.app {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 32px 80px;
+}
+
+@media (max-width: 640px) {
+  .app {
+    padding: 0 20px 56px;
+  }
+}
+
+/* ---------- masthead ----------
+   Filete grosso em cima, como cabeçalho de jornal. */
+
+.cabecalho {
+  border-top: 3px solid var(--regua-forte);
+  padding: 14px 0 40px;
+}
+
+/* A etiqueta ocupa a largura inteira para que o período encoste na margem
+   direita — por isso ela NÃO herda a medida de texto do corpo. */
+.cabecalho__etiqueta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--texto-medio);
+  font-variant-numeric: tabular-nums;
+  padding-bottom: 32px;
+}
+
+/* Manchete à esquerda, linha fina à direita, alinhadas pela base: o lado
+   direito deixa de ficar vazio e a dupla lê como abertura de reportagem. */
+.cabecalho__corpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 0 56px;
+}
+
+.cabecalho h1 {
+  font-size: clamp(2rem, 1.2rem + 2.6vw, 3.25rem);
+  margin: 0;
+}
+
+.cabecalho__linha-fina {
+  margin: 0;
+  padding-bottom: 8px;
+  color: var(--texto-medio);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 900px) {
+  .cabecalho__corpo {
+    grid-template-columns: 1fr;
+  }
+
+  .cabecalho__linha-fina {
+    padding-top: 18px;
+    padding-bottom: 0;
+    max-width: 54ch;
+  }
+}
+
+/* ---------- layout ---------- */
+
+.conteudo {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr);
+  gap: 0 48px;
+  align-items: start;
+  border-top: 1px solid var(--regua-forte);
+  padding-top: 28px;
+}
+
+.conteudo > aside {
+  position: sticky;
+  top: 28px;
+}
+
+.resultados {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+@media (max-width: 1000px) {
+  .conteudo {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .conteudo > aside {
+    position: static;
+    padding-bottom: 36px;
+  }
+}
+
+/* ---------- painel de controles ---------- */
+
+.painel fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.painel__titulo,
+.campo > .campo__rotulo:only-of-type,
+.legenda__cabecalho {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.painel__titulo {
+  color: var(--tinta);
+  padding: 0 0 4px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.campo__rotulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.8125rem;
+  color: var(--texto-medio);
+}
+
+.campo__valor {
+  color: var(--tinta);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.campo__ajuda {
+  margin: 0;
+  font-size: 0.78125rem;
+  line-height: 1.5;
+  color: var(--texto-fraco);
+}
+
+/* Campo de valor: linha de base, como preenchimento de formulário impresso. */
+.campo__moeda {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border: 0;
+  border-bottom: 1.5px solid var(--regua-forte);
+  padding: 0 0 4px;
+  color: var(--texto-fraco);
+  font-size: 0.8125rem;
+}
+
+.campo__moeda:focus-within {
+  border-bottom-color: var(--acento);
+}
+
+.campo__moeda input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--tinta);
+  font-family: var(--sans);
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.campo__moeda input:focus {
+  outline: none;
+}
+
+/* Esconde as setinhas do input number: elas quebram o alinhamento. */
+.campo__moeda input::-webkit-outer-spin-button,
+.campo__moeda input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.campo__moeda input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type='range'] {
+  accent-color: var(--acento);
+  width: 100%;
+  margin: 0;
+}
+
+/* ---------- controle segmentado ---------- */
+
+.segmentado {
+  display: inline-flex;
+  border: 1px solid var(--regua-forte);
+  padding: 0;
+  gap: 0;
+}
+
+.segmentado button {
+  flex: 1;
+  border: 0;
+  background: none;
+  padding: 7px 16px;
+  font-family: var(--sans);
+  font-size: 0.78125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texto-medio);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.segmentado button + button {
+  border-left: 1px solid var(--regua-forte);
+}
+
+.segmentado button:hover {
+  color: var(--tinta);
+}
+
+.segmentado button.ativo {
+  background: var(--regua-forte);
+  color: var(--papel);
+}
+
+/* ---------- lista de produtos ---------- */
+
+.lista-produtos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--regua);
+}
+
+.lista-produtos li {
+  border-bottom: 1px solid var(--regua);
+}
+
+.produto {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  cursor: pointer;
+  font-size: 0.84375rem;
+}
+
+.produto:hover .produto__nome {
+  color: var(--tinta);
+}
+
+.produto input {
+  accent-color: var(--acento);
+  margin: 0;
+}
+
+.produto__cor {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  background: var(--cor);
+}
+
+@media (prefers-color-scheme: dark) {
+  .produto__cor {
+    background: var(--cor-escura);
+  }
+}
+
+.produto__nome {
+  flex: 1;
+  min-width: 0;
+  color: var(--texto-medio);
+}
+
+.produto__risco {
+  color: var(--texto-fraco);
+  letter-spacing: 1px;
+  font-size: 0.6875rem;
+}
+
+.painel__rodape {
+  margin: 0;
+  padding-top: 16px;
+  border-top: 2px solid var(--regua-forte);
+  font-size: 0.8125rem;
+  color: var(--texto-medio);
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.painel__rodape strong {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- destaques ----------
+   Sem caixas: quatro colunas separadas por filete vertical. */
+
+.destaques {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0;
+  border-bottom: 1px solid var(--regua-forte);
+  padding-bottom: 28px;
+  margin-bottom: 28px;
+}
+
+.destaque {
+  padding: 0 24px;
+  border-left: 1px solid var(--regua);
+}
+
+.destaque:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+/* Reserva duas linhas: sem isso, um rótulo que quebra empurra o número para
+   baixo e os quatro destaques deixam de alinhar pela mesma base. */
+.destaque__rotulo {
+  margin: 0;
+  min-height: 2.6em;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  color: var(--texto-fraco);
+}
+
+.destaque__numero {
+  margin: 10px 0 6px;
+  font-family: var(--serifada);
+  font-size: 2.125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.destaque--principal .destaque__numero {
+  color: var(--acento);
+}
+
+.destaque__apoio {
+  margin: 0;
+  font-size: 0.78125rem;
+  line-height: 1.5;
+  color: var(--texto-fraco);
+}
+
+.destaque__apoio strong {
+  color: var(--texto-medio);
+  font-variant-numeric: tabular-nums;
+}
+
+.positivo {
+  color: var(--bom);
+}
+
+.negativo {
+  color: var(--ruim);
+}
+
+@media (max-width: 760px) {
+  .destaque {
+    padding: 16px 0;
+    border-left: 0;
+    border-top: 1px solid var(--regua);
+  }
+
+  .destaque:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+}
+
+/* ---------- seções ----------
+   Cada bloco é separado por uma régua, não por uma caixa flutuante. */
+
+.cartao {
+  padding: 32px 0;
+  border-bottom: 1px solid var(--regua-forte);
+}
+
+.cartao h2 {
+  font-size: 1.5rem;
+}
+
+.cartao__cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.cartao__subtitulo {
+  margin: 6px 0 0;
+  font-size: 0.8125rem;
+  color: var(--texto-medio);
+  font-variant-numeric: tabular-nums;
+}
+
+.cartao__dica {
+  margin: 20px 0 4px;
+  padding-left: 14px;
+  border-left: 2px solid var(--acento);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--texto-medio);
+  max-width: 76ch;
+}
+
+/* ---------- gráfico ---------- */
+
+.grafico {
+  margin-top: 20px;
+}
+
+.legenda {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--regua);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0 32px;
+}
+
+.legenda__item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.8125rem;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--regua);
+}
+
+.legenda__cor {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legenda__traco {
+  width: 12px;
+  border-top: 1.5px dashed var(--texto-fraco);
+  flex-shrink: 0;
+}
+
+.legenda__nome {
+  flex: 1;
+  min-width: 0;
+  color: var(--texto-medio);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legenda__valor {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.legenda__item--referencia .legenda__nome {
+  color: var(--texto-fraco);
+  font-style: italic;
+}
+
+/* ---------- tooltip ---------- */
+
+.dica {
+  background: var(--papel);
+  border: 1px solid var(--regua-forte);
+  padding: 12px 14px;
+  font-size: 0.8125rem;
+}
+
+.dica__titulo {
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--regua);
+  font-weight: 700;
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--texto-medio);
+}
+
+.dica table {
+  border-collapse: collapse;
+}
+
+.dica td {
+  padding: 2px 0;
+  white-space: nowrap;
+}
+
+.dica__cor {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  margin-right: 8px;
+}
+
+.dica__valor {
+  padding-left: 24px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.dica__referencia {
+  color: var(--texto-fraco);
+  font-style: italic;
+}
+
+.dica__referencia td {
+  padding-top: 8px;
+}
+
+/* ---------- tabela ---------- */
+
+.tabela-rolagem {
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84375rem;
+  white-space: nowrap;
+}
+
+.tabela th,
+.tabela td {
+  padding: 11px 16px 11px 0;
+  text-align: left;
+  border-bottom: 1px solid var(--regua);
+}
+
+.tabela thead th {
+  border-bottom: 1.5px solid var(--regua-forte);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--texto-medio);
+}
+
+.tabela tbody th {
+  font-weight: 500;
+}
+
+.tabela tbody tr:last-child th,
+.tabela tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tabela .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  padding-right: 0;
+  padding-left: 16px;
+}
+
+.tabela .forte {
+  font-weight: 700;
+}
+
+.tabela__cor {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  margin-right: 10px;
+}
+
+.isento {
+  color: var(--bom);
+  font-style: italic;
+}
+
+.observacoes {
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.78125rem;
+  line-height: 1.55;
+  color: var(--texto-fraco);
+  max-width: 80ch;
+}
+
+.observacoes li {
+  padding-left: 18px;
+  position: relative;
+}
+
+.observacoes li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+}
+
+.observacoes li + li {
+  margin-top: 6px;
+}
+
+/* ---------- fichas dos produtos ---------- */
+
+.fichas {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0;
+}
+
+.ficha {
+  padding: 0 28px 24px;
+  border-left: 1px solid var(--regua);
+  margin-bottom: 24px;
+}
+
+.ficha:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.ficha h3 {
+  font-size: 1.0625rem;
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.ficha__cor {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.ficha p {
+  margin: 10px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--texto-medio);
+}
+
+.ficha dl {
+  margin: 16px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--regua);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.78125rem;
+}
+
+.ficha dl > div {
+  display: flex;
+  gap: 12px;
+}
+
+.ficha dt {
+  color: var(--texto-fraco);
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.6875rem;
+  padding-top: 1px;
+}
+
+.ficha dd {
+  margin: 0 0 0 auto;
+  color: var(--texto-medio);
+  text-align: right;
+}
+
+@media (max-width: 760px) {
+  .ficha {
+    padding: 20px 0;
+    border-left: 0;
+    border-top: 1px solid var(--regua);
+    margin-bottom: 0;
+  }
+
+  .ficha:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+}
+
+/* ---------- glossário ---------- */
+
+.glossario {
+  padding: 32px 0;
+}
+
+.glossario h2 {
+  font-size: 1.5rem;
+}
+
+.glossario__intro {
+  margin: 8px 0 20px;
+  color: var(--texto-medio);
+  font-size: 0.9375rem;
+  max-width: 60ch;
+}
+
+.glossario ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1.5px solid var(--regua-forte);
+}
+
+.glossario li {
+  border-bottom: 1px solid var(--regua);
+}
+
+.glossario button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: none;
+  border: 0;
+  padding: 14px 0;
+  font-family: var(--serifada);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--tinta);
+  text-align: left;
+  cursor: pointer;
+}
+
+.glossario button:hover {
+  color: var(--acento);
+}
+
+.glossario__sinal {
+  font-family: var(--sans);
+  color: var(--texto-fraco);
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.glossario__definicao {
+  margin: 0 0 18px;
+  padding-right: 40px;
+  max-width: 68ch;
+  color: var(--texto-medio);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* ---------- avisos e rodapé ---------- */
+
+.aviso {
+  margin: 32px 0;
+  padding: 16px 0;
+  border-top: 1px solid var(--regua);
+  border-bottom: 1px solid var(--regua);
+  color: var(--texto-medio);
+  font-size: 0.875rem;
+}
+
+.aviso--erro {
+  border-color: var(--ruim);
+  color: var(--ruim);
+}
+
+.aviso--sutil {
+  border: 0;
+  padding: 8px 0 0;
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texto-fraco);
+}
+
+.rodape {
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 3px solid var(--regua-forte);
+  font-size: 0.78125rem;
+  line-height: 1.6;
+  color: var(--texto-fraco);
+}
+
+.rodape p {
+  margin: 0 0 10px;
+  max-width: 78ch;
+}
+
+.rodape strong {
+  color: var(--texto-medio);
+}
+
+/* O gráfico do Recharts não deve estourar a largura da coluna. */
+.recharts-wrapper {
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
