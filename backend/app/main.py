@@ -57,17 +57,19 @@ def simular(req: SimulacaoRequest) -> dict:
     except ValueError as erro:
         raise HTTPException(status_code=422, detail=str(erro)) from erro
 
-    meses = req.anos * 12
+    meses = req.total_meses
     historico = req.modo == "historico"
 
     premissas = req.premissas.preenchidas()
 
     if historico:
-        anos = simulador.anos_do_periodo(req.anos)
-        rotulos = simulador.rotulos_historicos(anos)
-        inflacao_mensal = simulador.taxas_inflacao_mensais(anos)
+        # A série pode ser mais curta do que o pedido se o histórico não alcançar.
+        periodo = simulador.meses_do_periodo(meses)
+        meses = len(periodo)
+        rotulos = simulador.rotulos_historicos(periodo)
+        inflacao_mensal = simulador.taxas_inflacao_mensais(periodo)
     else:
-        anos = []
+        periodo = []
         rotulos = simulador.rotulos_projecao(meses)
         ipca_estimado = premissas.get("ipca", simulador.PROJECAO_PADRAO["ipca"])
         inflacao_mensal = [simulador.taxa_mensal(ipca_estimado)] * meses
@@ -82,7 +84,7 @@ def simular(req: SimulacaoRequest) -> dict:
     for produto_id in req.produtos:
         produto = PRODUTOS_POR_ID[produto_id]
         if historico:
-            taxas = simulador.taxas_mensais_historicas(produto, anos)
+            taxas = simulador.taxas_mensais_historicas(produto, periodo)
         else:
             taxas = simulador.taxas_mensais_projetadas(produto, meses, premissas)
 

@@ -226,6 +226,7 @@ a {
 
 .painel__titulo,
 .campo > .campo__rotulo:only-of-type,
+.campo__linha > .campo__rotulo,
 .legenda__cabecalho {
   font-size: 0.6875rem;
   font-weight: 700;
@@ -238,10 +239,42 @@ a {
   padding: 0 0 4px;
 }
 
-.campo {
+.campo,
+.campo__linha {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* Atalhos de prazo: filete fino, sem peso de botão — são um complemento do
+   slider, não um controle concorrente. */
+.atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.atalhos button {
+  border: 1px solid var(--regua);
+  background: none;
+  padding: 4px 10px;
+  font-family: var(--sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--texto-medio);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.atalhos button:hover {
+  border-color: var(--regua-forte);
+  color: var(--tinta);
+}
+
+.atalhos button.ativo {
+  border-color: var(--regua-forte);
+  background: var(--regua-forte);
+  color: var(--papel);
 }
 
 .campo__rotulo {

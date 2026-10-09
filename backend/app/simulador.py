@@ -8,6 +8,7 @@ saldo inteiro e erram o valor líquido para cima.
 """
 
 from dataclasses import dataclass
+from datetime import date
 
 from .dados import (
     ANO_FINAL,
@@ -56,15 +57,25 @@ def _combinar(base_pct: float, produto: Produto) -> float:
     return indexado
 
 
-def anos_do_periodo(anos: int) -> list[int]:
-    """Os `anos` mais recentes disponíveis na série histórica."""
-    anos = max(1, min(anos, ANO_FINAL - ANO_INICIAL + 1))
-    return list(range(ANO_FINAL - anos + 1, ANO_FINAL + 1))
+#: Um mês do calendário, como (ano, mês). É a unidade do período: o usuário pode
+#: pedir 7 meses, não só múltiplos de 12.
+Mes = tuple[int, int]
 
 
-def taxas_mensais_historicas(produto: Produto, anos: list[int]) -> list[float]:
+def meses_do_periodo(meses: int) -> list[Mes]:
+    """Os `meses` mais recentes disponíveis na série histórica.
+
+    A série sempre termina em dezembro de `ANO_FINAL` e anda para trás a partir
+    dali, então um período de 7 meses vai de junho a dezembro do último ano.
+    """
+    disponiveis = [(ano, mes) for ano in range(ANO_INICIAL, ANO_FINAL + 1) for mes in range(1, 13)]
+    meses = max(1, min(meses, len(disponiveis)))
+    return disponiveis[-meses:]
+
+
+def taxas_mensais_historicas(produto: Produto, periodo: list[Mes]) -> list[float]:
     """Uma taxa mensal por mês do período, derivada do retorno real de cada ano."""
-    return [taxa_mensal(_rentabilidade_anual_do_produto(produto, ano)) for ano in anos for _ in range(12)]
+    return [taxa_mensal(_rentabilidade_anual_do_produto(produto, ano)) for ano, _ in periodo]
 
 
 def taxas_mensais_projetadas(produto: Produto, meses: int, premissas: dict[str, float]) -> list[float]:
@@ -181,9 +192,9 @@ def simular_produto(
     )
 
 
-def taxas_inflacao_mensais(anos: list[int]) -> list[float]:
+def taxas_inflacao_mensais(periodo: list[Mes]) -> list[float]:
     """IPCA mensal equivalente para cada mês do período histórico."""
-    return [taxa_mensal(RENTABILIDADE_ANUAL["ipca"][ano]) for ano in anos for _ in range(12)]
+    return [taxa_mensal(RENTABILIDADE_ANUAL["ipca"][ano]) for ano, _ in periodo]
 
 
 def inflacao_acumulada(taxas_inflacao: list[float]) -> float:
@@ -229,9 +240,23 @@ def aplicar_inflacao(resultado: ResultadoProduto, investido_corrigido: float) ->
         )
 
 
-def rotulos_historicos(anos: list[int]) -> list[str]:
-    return [f"{ano}-{mes:02d}" for ano in anos for mes in range(1, 13)]
+def rotulos_historicos(periodo: list[Mes]) -> list[str]:
+    return [f"{ano}-{mes:02d}" for ano, mes in periodo]
 
 
-def rotulos_projecao(meses: int) -> list[str]:
-    return [f"Mês {m}" for m in range(1, meses + 1)]
+def rotulos_projecao(meses: int, inicio: date | None = None) -> list[str]:
+    """Rótulos da projeção, no mesmo formato "AAAA-MM" do modo histórico.
+
+    Antes a projeção usava "Mês 1", "Mês 2"… e o eixo do gráfico acabava
+    mostrando "Mês 24" ou "Mês 36" — números que ninguém lê como data. Contar a
+    partir do mês corrente deixa os dois modos com o mesmo eixo e permite
+    formatar tudo com as mesmas funções no frontend.
+    """
+    hoje = inicio or date.today()
+    ano, mes = hoje.year, hoje.month
+
+    rotulos = []
+    for _ in range(meses):
+        rotulos.append(f"{ano}-{mes:02d}")
+        ano, mes = (ano + 1, 1) if mes == 12 else (ano, mes + 1)
+    return rotulos

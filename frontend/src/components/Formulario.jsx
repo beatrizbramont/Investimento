@@ -1,4 +1,14 @@
-import { moeda } from '../formatar'
+import { duracao, moeda } from '../formatar'
+
+// O controle é mensal, mas quase todo mundo pensa o prazo em números redondos —
+// os atalhos evitam caçar "60" num slider de 120 posições.
+const PRAZOS = [
+  { meses: 6, nome: '6 meses' },
+  { meses: 12, nome: '1 ano' },
+  { meses: 24, nome: '2 anos' },
+  { meses: 60, nome: '5 anos' },
+  { meses: 120, nome: '10 anos' },
+]
 
 /** Painel de controles: quanto, por quanto tempo e em quê.
  *
@@ -53,21 +63,34 @@ export default function Formulario({ parametros, aoMudar, produtos, desabilitado
           </div>
         </label>
 
-        <label className="campo">
-          <span className="campo__rotulo">
-            Por quanto tempo
-            <strong className="campo__valor">
-              {parametros.anos} {parametros.anos === 1 ? 'ano' : 'anos'}
-            </strong>
-          </span>
-          <input
-            type="range"
-            min="1"
-            max="10"
-            value={parametros.anos}
-            onChange={(e) => atualizar('anos', Number(e.target.value))}
-          />
-        </label>
+        <div className="campo">
+          <label className="campo__linha">
+            <span className="campo__rotulo">
+              Por quanto tempo
+              <strong className="campo__valor">{duracao(parametros.meses)}</strong>
+            </span>
+            <input
+              type="range"
+              min="1"
+              max="120"
+              value={parametros.meses}
+              onChange={(e) => atualizar('meses', Number(e.target.value))}
+            />
+          </label>
+          <div className="atalhos">
+            {PRAZOS.map((prazo) => (
+              <button
+                key={prazo.meses}
+                type="button"
+                aria-pressed={parametros.meses === prazo.meses}
+                className={parametros.meses === prazo.meses ? 'ativo' : ''}
+                onClick={() => atualizar('meses', prazo.meses)}
+              >
+                {prazo.nome}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="campo">
           <span className="campo__rotulo">Como calcular</span>
@@ -144,7 +167,7 @@ export default function Formulario({ parametros, aoMudar, produtos, desabilitado
         <p className="painel__rodape">
           Total depositado no período:{' '}
           <strong>
-            {moeda(parametros.aporte_inicial + parametros.aporte_mensal * parametros.anos * 12)}
+            {moeda(parametros.aporte_inicial + parametros.aporte_mensal * parametros.meses)}
           </strong>
         </p>
       </fieldset>

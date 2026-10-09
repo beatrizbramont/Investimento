@@ -143,11 +143,19 @@ curl -X POST http://127.0.0.1:8000/api/simular \
   -d '{
         "aporte_inicial": 1000,
         "aporte_mensal": 500,
-        "anos": 10,
+        "meses": 120,
         "modo": "historico",
         "produtos": ["poupanca", "lci_90", "tesouro_ipca"]
       }'
 ```
+
+O prazo vai em `meses` (1 a 120), o que permite períodos quebrados como 7 meses.
+O campo `anos` continua aceito como atalho para períodos redondos; se os dois
+vierem, `meses` prevalece.
+
+No modo `historico` a série termina sempre em dezembro de `ANO_FINAL` e anda para
+trás a partir dali. No modo `projecao` ela começa no mês corrente. Os dois usam o
+mesmo formato de rótulo (`"AAAA-MM"`), então o eixo do gráfico é o mesmo.
 
 </details>
 

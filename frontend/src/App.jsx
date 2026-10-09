@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { listarGlossario, listarProdutos, simular } from './api'
+import { duracao, rotuloCurto } from './formatar'
 import { useTemaEscuro } from './useTemaEscuro'
 import Destaques from './components/Destaques'
 import Formulario from './components/Formulario'
@@ -11,10 +12,17 @@ import TabelaResultados from './components/TabelaResultados'
 const PARAMETROS_INICIAIS = {
   aporte_inicial: 1000,
   aporte_mensal: 500,
-  anos: 10,
+  meses: 120,
   modo: 'historico',
   cdiProjetado: 10.5,
   produtos: [],
+}
+
+/** "2016–2025", ou só "2025" quando o período cabe num ano. */
+function faixaDeAnos({ inicio, fim }) {
+  const primeiro = inicio.slice(0, 4)
+  const ultimo = fim.slice(0, 4)
+  return primeiro === ultimo ? primeiro : `${primeiro}–${ultimo}`
 }
 
 export default function App() {
@@ -57,7 +65,7 @@ export default function App() {
       simular({
         aporte_inicial: parametros.aporte_inicial,
         aporte_mensal: parametros.aporte_mensal,
-        anos: parametros.anos,
+        meses: parametros.meses,
         modo: parametros.modo,
         produtos: parametros.produtos,
         premissas: parametros.modo === 'projecao' ? { cdi: parametros.cdiProjetado } : {},
@@ -79,7 +87,7 @@ export default function App() {
         <p className="cabecalho__etiqueta">
           <span>Investe Simples</span>
           <span>
-            {dados ? `${dados.periodo.inicio.slice(0, 4)}–${dados.periodo.fim.slice(0, 4)}` : '—'}
+            {dados ? faixaDeAnos(dados.periodo) : '—'}
           </span>
         </p>
         <div className="cabecalho__corpo">
@@ -120,8 +128,8 @@ export default function App() {
                     <h2 id="grafico-titulo">Evolução do seu patrimônio</h2>
                     <p className="cartao__subtitulo">
                       {dados.periodo.modo === 'historico'
-                        ? `Rentabilidade real de ${dados.periodo.inicio.slice(0, 4)} a ${dados.periodo.fim.slice(0, 4)}`
-                        : `Projeção para ${Math.round(dados.periodo.meses / 12)} anos`}
+                        ? `Rentabilidade real de ${rotuloCurto(dados.periodo.inicio)} a ${rotuloCurto(dados.periodo.fim)}`
+                        : `Projeção para ${duracao(dados.periodo.meses)}`}
                       {' · inflação acumulada de '}
                       {dados.periodo.inflacao_acumulada_pct.toLocaleString('pt-BR')}%
                     </p>

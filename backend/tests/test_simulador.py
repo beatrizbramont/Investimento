@@ -110,10 +110,10 @@ def test_tesouro_ipca_compoe_inflacao_com_juro_real():
 
 def test_serie_tem_um_ponto_por_mes_e_investido_acumula():
     produto = PRODUTOS_POR_ID["poupanca"]
-    anos = simulador.anos_do_periodo(5)
-    taxas = simulador.taxas_mensais_historicas(produto, anos)
+    periodo = simulador.meses_do_periodo(60)
+    taxas = simulador.taxas_mensais_historicas(produto, periodo)
     resultado = simulador.simular_produto(
-        produto, taxas, 1000, 500, simulador.rotulos_historicos(anos),
+        produto, taxas, 1000, 500, simulador.rotulos_historicos(periodo),
     )
     assert len(resultado.serie) == 60
     assert resultado.serie[0].investido == 1500      # inicial + 1º aporte
@@ -122,8 +122,8 @@ def test_serie_tem_um_ponto_por_mes_e_investido_acumula():
 
 def test_aportes_corrigidos_valem_mais_que_a_soma_nominal():
     """Dinheiro depositado há dez anos vale mais, em poder de compra, que o de hoje."""
-    anos = simulador.anos_do_periodo(10)
-    inflacao = simulador.taxas_inflacao_mensais(anos)
+    periodo = simulador.meses_do_periodo(120)
+    inflacao = simulador.taxas_inflacao_mensais(periodo)
     corrigido = simulador.investido_a_valor_de_hoje(inflacao, 1000, 500)
     nominal = 1000 + 500 * 120
     fator = simulador.inflacao_acumulada(inflacao)
@@ -133,12 +133,12 @@ def test_aportes_corrigidos_valem_mais_que_a_soma_nominal():
 
 def test_ganho_real_e_menor_que_o_ganho_nominal():
     produto = PRODUTOS_POR_ID["poupanca"]
-    anos = simulador.anos_do_periodo(10)
-    inflacao = simulador.taxas_inflacao_mensais(anos)
+    periodo = simulador.meses_do_periodo(120)
+    inflacao = simulador.taxas_inflacao_mensais(periodo)
     resultado = simulador.simular_produto(
         produto,
-        simulador.taxas_mensais_historicas(produto, anos),
-        1000, 500, simulador.rotulos_historicos(anos),
+        simulador.taxas_mensais_historicas(produto, periodo),
+        1000, 500, simulador.rotulos_historicos(periodo),
     )
     simulador.aplicar_inflacao(
         resultado, simulador.investido_a_valor_de_hoje(inflacao, 1000, 500)
@@ -151,9 +151,28 @@ def test_investido_a_valor_de_hoje_sem_inflacao_e_a_soma_nominal():
     assert simulador.investido_a_valor_de_hoje([0.0] * 12, 1000, 500) == pytest.approx(7000)
 
 
-def test_anos_do_periodo_respeita_a_serie_disponivel():
+def test_meses_do_periodo_termina_sempre_em_dezembro_do_ultimo_ano():
     from app.dados import ANO_FINAL, ANO_INICIAL
 
-    assert simulador.anos_do_periodo(3) == [ANO_FINAL - 2, ANO_FINAL - 1, ANO_FINAL]
-    # Pedir mais anos do que existe na série devolve a série inteira.
-    assert len(simulador.anos_do_periodo(99)) == ANO_FINAL - ANO_INICIAL + 1
+    assert simulador.meses_do_periodo(36)[0] == (ANO_FINAL - 2, 1)
+    assert simulador.meses_do_periodo(36)[-1] == (ANO_FINAL, 12)
+
+    # Um prazo quebrado anda para trás a partir de dezembro, sem arredondar ano.
+    quebrado = simulador.meses_do_periodo(7)
+    assert quebrado[0] == (ANO_FINAL, 6)
+    assert quebrado[-1] == (ANO_FINAL, 12)
+
+    # Pedir mais meses do que existe na série devolve a série inteira.
+    assert len(simulador.meses_do_periodo(999)) == (ANO_FINAL - ANO_INICIAL + 1) * 12
+
+
+def test_rotulos_de_projecao_sao_datas_de_verdade():
+    """O eixo do gráfico mostrava "Mês 24" — número que ninguém lê como data."""
+    from datetime import date
+
+    rotulos = simulador.rotulos_projecao(14, inicio=date(2026, 11, 1))
+    assert rotulos[0] == "2026-11"
+    assert rotulos[1] == "2026-12"
+    assert rotulos[2] == "2027-01"   # vira o ano corretamente
+    assert rotulos[-1] == "2027-12"
+    assert len(rotulos) == 14

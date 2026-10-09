@@ -64,6 +64,17 @@ export function rotuloCurto(rotulo) {
   return `${MESES[Number(mes) - 1]}/${ano.slice(2)}`
 }
 
+/** 40 meses viram "3 anos e 4 meses" — ninguém pensa o próprio prazo em meses
+ *  corridos depois do primeiro ano. */
+export function duracao(meses) {
+  const anos = Math.floor(meses / 12)
+  const resto = meses % 12
+  const partes = []
+  if (anos > 0) partes.push(`${anos} ${anos === 1 ? 'ano' : 'anos'}`)
+  if (resto > 0) partes.push(`${resto} ${resto === 1 ? 'mês' : 'meses'}`)
+  return partes.join(' e ')
+}
+
 export function rotuloLongo(rotulo) {
   const partes = /^(\d{4})-(\d{2})$/.exec(rotulo)
   if (!partes) return rotulo

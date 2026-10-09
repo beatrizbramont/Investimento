@@ -11,6 +11,10 @@ import {
 
 import { moeda, numeroCurto, rotuloCurto, rotuloLongo } from '../formatar'
 
+// Intervalos "redondos" entre marcas do eixo X, do mais fino ao mais grosso.
+const PASSOS_EM_MESES = [1, 2, 3, 6, 12, 24]
+const MAXIMO_DE_MARCAS = 10
+
 /** Evolução do patrimônio mês a mês, uma linha por produto.
  *
  * Um único eixo Y (reais) para todas as séries — comparar curvas em escalas
@@ -31,12 +35,23 @@ export default function GraficoComparativo({ resultados, visao, escuro }) {
     })
   }, [resultados, visao])
 
-  // Marcamos só os janeiros no eixo X; 120 rótulos não caberiam.
+  // O eixo X precisa funcionar tanto para 3 meses quanto para 120. Marcar "só os
+  // janeiros" deixava um período de um ano com um único rótulo na tela, então
+  // escolhemos um passo proporcional ao tamanho da série — sempre um intervalo
+  // redondo, para os rótulos caírem em meses que o olho reconhece.
   const marcas = useMemo(() => {
-    const janeiros = dados.filter((d) => d.rotulo.endsWith('-01')).map((d) => d.rotulo)
-    if (janeiros.length > 0) return janeiros
-    // Modo projeção: um rótulo a cada 12 meses.
-    return dados.filter((_, i) => i % 12 === 11).map((d) => d.rotulo)
+    const passo = PASSOS_EM_MESES.find((p) => Math.ceil(dados.length / p) <= MAXIMO_DE_MARCAS)
+      ?? PASSOS_EM_MESES[PASSOS_EM_MESES.length - 1]
+
+    const indices = []
+    for (let i = 0; i < dados.length; i += passo) indices.push(i)
+
+    // O último mês é o que o usuário mais olha; garantimos o rótulo dele, desde
+    // que não fique colado no anterior.
+    const ultimo = dados.length - 1
+    if (ultimo - indices[indices.length - 1] >= passo / 2) indices.push(ultimo)
+
+    return indices.map((i) => dados[i].rotulo)
   }, [dados])
 
   if (dados.length === 0) return null

@@ -1,5 +1,7 @@
 """Testes dos endpoints HTTP."""
 
+from datetime import date
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -71,9 +73,34 @@ def test_modo_projecao_usa_premissas_informadas():
         },
     ).json()
     assert dados["periodo"]["modo"] == "projecao"
-    assert dados["periodo"]["inicio"] == "Mês 1"
+    # A projeção começa no mês corrente, no mesmo formato do modo histórico.
+    assert dados["periodo"]["inicio"] == date.today().strftime("%Y-%m")
     assert dados["total_investido"] == 60_000
     assert dados["resultados"][0]["resumo"]["valor_bruto"] > 60_000
+
+
+def test_prazo_em_meses_aceita_periodo_quebrado():
+    """O filtro é mensal: 7 meses não vira "1 ano" nem erro."""
+    dados = cliente.post(
+        "/api/simular",
+        json={"aporte_inicial": 0, "aporte_mensal": 100, "meses": 7, "produtos": ["poupanca"]},
+    ).json()
+
+    assert dados["periodo"]["meses"] == 7
+    assert dados["periodo"]["inicio"] == f"{ANO_FINAL}-06"
+    assert dados["periodo"]["fim"] == f"{ANO_FINAL}-12"
+    assert len(dados["resultados"][0]["serie"]) == 7
+    assert dados["total_investido"] == 700
+
+
+def test_meses_tem_prioridade_sobre_anos():
+    dados = cliente.post("/api/simular", json={"anos": 10, "meses": 18}).json()
+    assert dados["periodo"]["meses"] == 18
+
+
+@pytest.mark.parametrize("meses", [0, 121])
+def test_prazo_em_meses_fora_do_intervalo_e_rejeitado(meses):
+    assert cliente.post("/api/simular", json={"meses": meses}).status_code == 422
 
 
 def test_produto_desconhecido_e_rejeitado():

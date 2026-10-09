@@ -24,9 +24,16 @@ class SimulacaoRequest(BaseModel):
     aporte_inicial: float = Field(default=1000, ge=0, le=100_000_000)
     aporte_mensal: float = Field(default=500, ge=0, le=10_000_000)
     anos: int = Field(default=10, ge=1, le=10)
+    #: Prazo em meses. Tem prioridade sobre `anos`, que fica como atalho para
+    #: quem só quer períodos redondos.
+    meses: int | None = Field(default=None, ge=1, le=120)
     modo: Literal["historico", "projecao"] = "historico"
     produtos: list[str] = Field(default_factory=lambda: list(PRODUTOS_POR_ID))
     premissas: PremissasProjecao = Field(default_factory=PremissasProjecao)
+
+    @property
+    def total_meses(self) -> int:
+        return self.meses if self.meses is not None else self.anos * 12
 
     @field_validator("produtos")
     @classmethod
